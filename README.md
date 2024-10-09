@@ -47,7 +47,6 @@ V budoucnu je možné projekt dále rozšířit a vylepšit následujícími zp�
 - **Přidání více her**: Například Snake, Arkanoid, Space Invaders nebo jiné retro hry.
 - **Zvukové efekty**: Přidání zvukového výstupu (buzzer) pro obohacení herního zážitku.
 - **Bezdrátové ovládání**: Implementace bezdrátové komunikace (např. pomocí Bluetooth modulu) pro možnost hrát hry na vzdálenost.
-- **Vícebarevný displej**: Výměna displeje za vícebarevný pro lepší grafiku her.
 - **Vylepšení ovládacích prvků**: Přidání joysticku nebo více tlačítek pro komplexnější hry.
 - **Ukládání skóre**: Možnost ukládání a zobrazování nejvyšších skóre pomocí externí paměti.
 - **Nabíjecí baterie**: Implementace nabíjecí baterie pro větší mobilitu zařízení.
@@ -56,7 +55,5 @@ V budoucnu je možné projekt dále rozšířit a vylepšit následujícími zp�
 
 Tento projekt ukazuje, jak lze s pomocí Arduina vytvořit plně funkční game pad a hrát jednoduché retro hry. Je to skvělý příklad kombinace hardwarového a softwarového vývoje s možností dalšího rozšíření a vylepšení.
 
-## Autor
 
-Projekt byl vytvořen jako maturitní práce na [tvoje škola] v roce [rok].
 
