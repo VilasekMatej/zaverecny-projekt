@@ -38,7 +38,7 @@ int paddleSpeed = 5;
 // Druhá pálka (na pravé straně)
 int paddle2X;
 int paddle2Y;
-int paddle2Speed = 3;
+int paddle2Speed = 5;
 
 int ballX, ballY;
 int ballSpeedX = 2;
@@ -47,11 +47,20 @@ int ballSpeedY = 2;
 int screenWidth = 320;
 int screenHeight = 240 ;
 
+// Parametry pro zrychlení míčku
+float ballSpeedMultiplier = 1.1; // Faktor pro zrychlení míčku
+
 // Funkce pro resetování míčku
 void resetBall() {
     ballX = screenWidth / 2;
     ballY = screenHeight / 2;
     ballSpeedX = random(2, 4) * (random(0, 2) * 2 - 1);  // Náhodný směr a rychlost
+    ballSpeedY = random(2, 4) * (random(0, 2) * 2 - 1);
+}
+
+// Nastavení počátečních hodnot zrychlení
+void resetSpeed() {
+    ballSpeedX = random(2, 4) * (random(0, 2) * 2 - 1); 
     ballSpeedY = random(2, 4) * (random(0, 2) * 2 - 1);
 }
 
@@ -80,26 +89,27 @@ void setup() {
     ts.setPrecision(PREC_EXTREME);
 }
 
+// Funkce pro vykreslení pálky
 void drawPaddle(int x, int y) {
-    // Vykreslení pálky
     tft.fillRect(x, y, paddleWidth, paddleHeight, ILI9341_WHITE);
 }
 
+// Funkce pro smazání pálky
 void clearPaddle(int x, int y) {
-    // Smazání pálky (černá barva)
     tft.fillRect(x, y, paddleWidth, paddleHeight, ILI9341_BLACK);
 }
 
+// Funkce pro vykreslení míčku
 void drawBall() {
-    // Vykreslení míčku
     tft.fillRect(ballX, ballY, ballSize, ballSize, ILI9341_WHITE);
 }
 
+// Funkce pro smazání míčku
 void clearBall() {
-    // Smazání míčku (černá barva)
     tft.fillRect(ballX, ballY, ballSize, ballSize, ILI9341_BLACK);
 }
 
+// Funkce pro pohyb míčku
 void moveBall() {
     clearBall(); // Smaže předchozí pozici míčku
     ballX += ballSpeedX;
@@ -112,50 +122,47 @@ void moveBall() {
 
     // **Kolize s levou pálkou**
     if (ballX <= paddleX + paddleWidth && ballX >= paddleX) {
-        // Zkontroluj, zda je míček v rozsahu výšky pálky
         if (ballY + ballSize >= paddleY && ballY <= paddleY + paddleHeight) {
             ballSpeedX = -ballSpeedX; // Změna směru na ose X
-            ballX = paddleX + paddleWidth; // Posun míčku mimo pálku, aby se vyhnul uvíznutí
+            ballX = paddleX + paddleWidth; // Posun míčku mimo pálku
             
-            // Zrychlení míčku o 5 %
-            ballSpeedX *= 1.4;
-            ballSpeedY *= 1.4;
-            paddle2Speed *= 1.4;
+            // Zrychlení míčku o 40%
+            ballSpeedX *= ballSpeedMultiplier; 
+            ballSpeedY *= ballSpeedMultiplier;
         }
     }
 
     // **Kolize s pravou pálkou**
     if (ballX + ballSize >= paddle2X && ballX <= paddle2X + paddleWidth) {
-        // Zkontroluj, zda je míček v rozsahu výšky pálky
         if (ballY + ballSize >= paddle2Y && ballY <= paddle2Y + paddleHeight) {
-            ballSpeedX = -ballSpeedX; // Změna směru na ose X
-            ballX = paddle2X - ballSize; // Posun míčku mimo pálku, aby se vyhnul uvíznutí
+            ballSpeedX = -ballSpeedX;
+            ballX = paddle2X - ballSize; // Posun míčku mimo pálku
 
-            // Zrychlení míčku o 5 %
-            ballSpeedX *= 1.4;
-            ballSpeedY *= 1.4;
-            paddle2Speed *= 1.4;
+            // Zrychlení míčku o 40%
+            ballSpeedX *= ballSpeedMultiplier; 
+            ballSpeedY *= ballSpeedMultiplier;
         }
     }
 
     // Kontrola, zda míček opustil obrazovku (prohra)
     if (ballX <= 0 || ballX >= screenWidth - ballSize) {
         resetBall();
+        resetSpeed();  // Resetujeme rychlost po resetu míčku
     }
 
     drawBall(); // Vykreslí míček na nové pozici
 }
 
-
+// Funkce pro pohyb pálky
 void movePaddle() {
     clearPaddle(paddleX, paddleY); // Smaže předchozí pozici pálky
 
     // Pohyb pálky podle stisknutých tlačítek
-    if (digitalRead(BUTTON_LEFT) == LOW && paddleY < screenHeight - paddleHeight) { // Pohyb doleva (snižování hodnoty X)
+    if (digitalRead(BUTTON_LEFT) == LOW && paddleY < screenHeight - paddleHeight) { 
         paddleY += paddleSpeed; 
     }
     
-    if (digitalRead(BUTTON_RIGHT) == LOW && paddleY > 0) { // Pohyb doprava (zvyšování hodnoty X)
+    if (digitalRead(BUTTON_RIGHT) == LOW && paddleY > 0) { 
         paddleY -= paddleSpeed; 
     }
 
@@ -164,27 +171,26 @@ void movePaddle() {
         ts.read();
         int touchY = ts.getY();
         if (touchY != -1) {
-            paddleY = screenHeight - touchY - paddleHeight / 2; // Inverze osy Y
+            paddleY = screenHeight - touchY - paddleHeight / 2; 
         }
     }
 
-    // Zajištění, že pálka zůstane v rámci obrazovky (na horní a dolní hranici)
+    // Zajištění, že pálka zůstane v rámci obrazovky
     if (paddleY < 0) {
-        paddleY = 0; // Pálka se nemůže dostat nad obrazovku
+        paddleY = 0; 
     }
     if (paddleY > screenHeight - paddleHeight) {
-        paddleY = screenHeight - paddleHeight; // Pálka se nemůže dostat pod obrazovku
+        paddleY = screenHeight - paddleHeight;
     }
 
     drawPaddle(paddleX, paddleY); // Vykreslí pálku na nové pozici
 }
 
-
-
+// Funkce pro pohyb druhé pálky
 void movePaddle2() {
-    clearPaddle(paddle2X, paddle2Y); // Smaže předchozí pozici pálky 2
+    clearPaddle(paddle2X, paddle2Y); 
 
-    // Jednoduchá AI pro pohyb druhé pálky (automatický pohyb za míčkem)
+    // Jednoduchá AI pro pohyb druhé pálky
     if (ballY < paddle2Y && paddle2Y > 0) {
         paddle2Y -= paddle2Speed;
     }
@@ -192,14 +198,29 @@ void movePaddle2() {
         paddle2Y += paddle2Speed;
     }
 
+    // Ujistíme se, že druhá pálka se vždy pohybuje hladce, aniž by zůstala "zaseknutá"
+    if (paddle2Y < 0) {
+        paddle2Y = 0;
+    }
+    if (paddle2Y > screenHeight - paddleHeight) {
+        paddle2Y = screenHeight - paddleHeight;
+    }
 
     drawPaddle(paddle2X, paddle2Y); // Vykreslí druhou pálku na nové pozici
 }
 
-void loop() {
-    movePaddle();   // Pohyb první pálky
-    movePaddle2();  // Pohyb druhé pálky (AI)
-    moveBall();     // Pohyb míčku
+// Funkce pro zajištění plynulosti bez použití delay
+unsigned long previousMillis = 0;
+const long interval = 10; // Interval pro aktualizaci (10 ms)
 
-    delay(10); // Rychlejší vykreslování
+void loop() {
+    unsigned long currentMillis = millis();
+    
+    if (currentMillis - previousMillis >= interval) {
+        previousMillis = currentMillis;
+
+        movePaddle();   // Pohyb první pálky
+        movePaddle2();  // Pohyb druhé pálky (AI)
+        moveBall();     // Pohyb míčku
+    }
 }
