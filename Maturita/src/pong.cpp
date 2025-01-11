@@ -1,26 +1,26 @@
-#include "Adafruit_GFX.h"     
-#include "Adafruit_ILI9341.h" 
-#include "URTouch.h" 
-#include "Arduino.h"         
+#include "Adafruit_GFX.h"
+#include "Adafruit_ILI9341.h"
+#include "URTouch.h"
+#include "Arduino.h"
 
-#define TFT_DC 9              
-#define TFT_CS 10            
+#define TFT_DC 9
+#define TFT_CS 10
 #define TFT_RST 8
-#define TFT_MISO 12         
-#define TFT_MOSI 11           
-#define TFT_CLK 13            
+#define TFT_MISO 12
+#define TFT_MOSI 11
+#define TFT_CLK 13
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
 
-#define t_SCK 3              
-#define t_CS 4                
-#define t_MOSI 5              
-#define t_MISO 6              
-#define t_IRQ 7 
+#define t_SCK 3
+#define t_CS 4
+#define t_MOSI 5
+#define t_MISO 6
+#define t_IRQ 7
 
 URTouch ts(t_SCK, t_CS, t_MOSI, t_MISO, t_IRQ);
 
-// Tlačítka na pinech 0, 1 a 2
+// Tlačítka na pinech
 #define BUTTON_UP A2
 #define BUTTON_LEFT A3
 #define BUTTON_DOWN A4
@@ -41,132 +41,149 @@ int paddle2Y;
 int paddle2Speed = 5;
 
 int ballX, ballY;
-int ballSpeedX = 2;
-int ballSpeedY = 2;
+float ballSpeedX = 2;
+float ballSpeedY = 2;
 
 int screenWidth = 320;
-int screenHeight = 240 ;
+int screenHeight = 240;
+
+// Výška zóny pro skóre
+int scoreZoneHeight = 30;
+
+// Parametry skóre
+int scorePlayer1 = 0;
+int scorePlayer2 = 0;
 
 // Parametry pro zrychlení míčku
-float ballSpeedMultiplier = 1.1; // Faktor pro zrychlení míčku
+float ballSpeedMultiplier = 1.34; // Faktor pro zrychlení míčku
+float currentSpeedMultiplier = 1.0; // Aktuální rychlostní násobek
 
 // Funkce pro resetování míčku
-void resetBall() {
+void resetBall(bool towardsPlayer1) {
     ballX = screenWidth / 2;
     ballY = screenHeight / 2;
-    ballSpeedX = random(2, 4) * (random(0, 2) * 2 - 1);  // Náhodný směr a rychlost
-    ballSpeedY = random(2, 4) * (random(0, 2) * 2 - 1);
+
+    // Resetujeme rychlost míčku na základní hodnoty
+    ballSpeedX = random(2, 4) * (towardsPlayer1 ? -1 : 1); // Směr závisí na parametru
+    ballSpeedY = random(2, 4) * (random(0, 2) * 2 - 1);    // Náhodný směr nahoru/dolů
+
+    // Resetujeme aktuální rychlostní násobek
+    currentSpeedMultiplier = 1.0;
 }
 
-// Nastavení počátečních hodnot zrychlení
-void resetSpeed() {
-    ballSpeedX = random(2, 4) * (random(0, 2) * 2 - 1); 
-    ballSpeedY = random(2, 4) * (random(0, 2) * 2 - 1);
+// Aktualizace skóre na obrazovce
+void updateScore() {
+    tft.fillRect(0, 0, screenWidth, scoreZoneHeight, ILI9341_BLACK);
+
+    int scoreLineY = scoreZoneHeight - 2;
+    tft.drawLine(0, scoreLineY, screenWidth, scoreLineY, ILI9341_WHITE);
+
+    tft.setTextColor(ILI9341_WHITE);
+    tft.setTextSize(2);
+
+    int player1ScoreX = 8;
+    int player1ScoreY = 290;
+    int player2ScoreY = 10;
+
+    tft.setRotation(0);
+    tft.setCursor(player1ScoreX, player2ScoreY);
+    tft.print(scorePlayer2);
+
+    tft.setCursor(player1ScoreX, player1ScoreY);
+    tft.print(scorePlayer1);
+
+    tft.setRotation(3);
 }
 
 void setup() {
     tft.begin();
-    tft.setRotation(3); // Nastavení orientace displeje
+    tft.setRotation(3);
     Serial.begin(9600);
 
-    // Inicializace tlačítek
     pinMode(BUTTON_UP, INPUT_PULLUP);
     pinMode(BUTTON_LEFT, INPUT_PULLUP);
     pinMode(BUTTON_DOWN, INPUT_PULLUP);
     pinMode(BUTTON_RIGHT, INPUT_PULLUP);
 
-    // Inicializace pálky a míčku
-    paddleY = screenHeight / 2 - paddleHeight / 2;
-    paddle2X = screenWidth - paddleWidth - 10; // Druhá pálka na pravé straně
-    paddle2Y = screenHeight / 2 - paddleHeight / 2;
+    paddleY = (screenHeight + scoreZoneHeight) / 2 - paddleHeight / 2;
+    paddle2X = screenWidth - paddleWidth - 10;
+    paddle2Y = (screenHeight + scoreZoneHeight) / 2 - paddleHeight / 2;
 
-    resetBall();
+    resetBall(true);
 
-    // Vymazání obrazovky
     tft.fillScreen(ILI9341_BLACK);
+    updateScore();
 
     ts.InitTouch();
     ts.setPrecision(PREC_EXTREME);
 }
 
-// Funkce pro vykreslení pálky
 void drawPaddle(int x, int y) {
     tft.fillRect(x, y, paddleWidth, paddleHeight, ILI9341_WHITE);
 }
 
-// Funkce pro smazání pálky
 void clearPaddle(int x, int y) {
     tft.fillRect(x, y, paddleWidth, paddleHeight, ILI9341_BLACK);
 }
 
-// Funkce pro vykreslení míčku
 void drawBall() {
     tft.fillRect(ballX, ballY, ballSize, ballSize, ILI9341_WHITE);
 }
 
-// Funkce pro smazání míčku
 void clearBall() {
     tft.fillRect(ballX, ballY, ballSize, ballSize, ILI9341_BLACK);
 }
 
-// Funkce pro pohyb míčku
 void moveBall() {
-    clearBall(); // Smaže předchozí pozici míčku
-    ballX += ballSpeedX;
-    ballY += ballSpeedY;
+    clearBall();
+    ballX += ballSpeedX * currentSpeedMultiplier;
+    ballY += ballSpeedY * currentSpeedMultiplier;
 
-    // Kontrola nárazů na horní a dolní stěnu
-    if (ballY <= 0 || ballY >= screenHeight - ballSize) {
-        ballSpeedY = -ballSpeedY; // Změna směru na ose Y
+    if (ballY <= scoreZoneHeight || ballY >= screenHeight - ballSize) {
+        ballSpeedY = -ballSpeedY;
     }
 
-    // **Kolize s levou pálkou**
     if (ballX <= paddleX + paddleWidth && ballX >= paddleX) {
         if (ballY + ballSize >= paddleY && ballY <= paddleY + paddleHeight) {
-            ballSpeedX = -ballSpeedX; // Změna směru na ose X
-            ballX = paddleX + paddleWidth; // Posun míčku mimo pálku
-            
-            // Zrychlení míčku o 40%
-            ballSpeedX *= ballSpeedMultiplier; 
-            ballSpeedY *= ballSpeedMultiplier;
+            ballSpeedX = -ballSpeedX;
+            ballX = paddleX + paddleWidth;
+
+            currentSpeedMultiplier *= ballSpeedMultiplier;
         }
     }
 
-    // **Kolize s pravou pálkou**
     if (ballX + ballSize >= paddle2X && ballX <= paddle2X + paddleWidth) {
         if (ballY + ballSize >= paddle2Y && ballY <= paddle2Y + paddleHeight) {
             ballSpeedX = -ballSpeedX;
-            ballX = paddle2X - ballSize; // Posun míčku mimo pálku
+            ballX = paddle2X - ballSize;
 
-            // Zrychlení míčku o 40%
-            ballSpeedX *= ballSpeedMultiplier; 
-            ballSpeedY *= ballSpeedMultiplier;
+            currentSpeedMultiplier *= ballSpeedMultiplier;
         }
     }
 
-    // Kontrola, zda míček opustil obrazovku (prohra)
-    if (ballX <= 0 || ballX >= screenWidth - ballSize) {
-        resetBall();
-        resetSpeed();  // Resetujeme rychlost po resetu míčku
+    if (ballX <= 0) {
+        scorePlayer2++;
+        updateScore();
+        resetBall(false);
+    } else if (ballX >= screenWidth - ballSize) {
+        scorePlayer1++;
+        updateScore();
+        resetBall(true);
     }
 
-    drawBall(); // Vykreslí míček na nové pozici
+    drawBall();
 }
 
-// Funkce pro pohyb pálky
 void movePaddle() {
-    clearPaddle(paddleX, paddleY); // Smaže předchozí pozici pálky
+    clearPaddle(paddleX, paddleY);
 
-    // Pohyb pálky podle stisknutých tlačítek
     if (digitalRead(BUTTON_LEFT) == LOW && paddleY < screenHeight - paddleHeight) { 
         paddleY += paddleSpeed; 
     }
-    
-    if (digitalRead(BUTTON_RIGHT) == LOW && paddleY > 0) { 
+    if (digitalRead(BUTTON_RIGHT) == LOW && paddleY > scoreZoneHeight) { 
         paddleY -= paddleSpeed; 
     }
 
-    // Pohyb pálky pomocí dotyku
     if (ts.dataAvailable()) {
         ts.read();
         int touchY = ts.getY();
@@ -175,52 +192,60 @@ void movePaddle() {
         }
     }
 
-    // Zajištění, že pálka zůstane v rámci obrazovky
-    if (paddleY < 0) {
-        paddleY = 0; 
-    }
-    if (paddleY > screenHeight - paddleHeight) {
-        paddleY = screenHeight - paddleHeight;
-    }
-
-    drawPaddle(paddleX, paddleY); // Vykreslí pálku na nové pozici
+    drawPaddle(paddleX, paddleY);
 }
 
-// Funkce pro pohyb druhé pálky
 void movePaddle2() {
-    clearPaddle(paddle2X, paddle2Y); 
+    clearPaddle(paddle2X, paddle2Y);
 
-    // Jednoduchá AI pro pohyb druhé pálky
-    if (ballY < paddle2Y && paddle2Y > 0) {
-        paddle2Y -= paddle2Speed;
-    }
-    if (ballY > paddle2Y + paddleHeight && paddle2Y < screenHeight - paddleHeight) {
-        paddle2Y += paddle2Speed;
-    }
+    int targetY = constrain(ballY - paddleHeight / 2, scoreZoneHeight, screenHeight - paddleHeight);
 
-    // Ujistíme se, že druhá pálka se vždy pohybuje hladce, aniž by zůstala "zaseknutá"
-    if (paddle2Y < 0) {
-        paddle2Y = 0;
-    }
-    if (paddle2Y > screenHeight - paddleHeight) {
-        paddle2Y = screenHeight - paddleHeight;
+    if (paddle2Y < targetY) {
+        paddle2Y += min(paddle2Speed, targetY - paddle2Y);
+    } else if (paddle2Y > targetY) {
+        paddle2Y -= min(paddle2Speed, paddle2Y - targetY);
     }
 
-    drawPaddle(paddle2X, paddle2Y); // Vykreslí druhou pálku na nové pozici
+    drawPaddle(paddle2X, paddle2Y);
 }
 
-// Funkce pro zajištění plynulosti bez použití delay
 unsigned long previousMillis = 0;
-const long interval = 10; // Interval pro aktualizaci (10 ms)
+const long interval = 10;
+
+void displayMessage(String message, uint16_t color) {
+    tft.fillScreen(color);
+    tft.setTextColor(ILI9341_BLACK);
+    tft.setTextSize(3);
+
+    int textWidth = message.length() * 6 * 3;
+    int textHeight = 6 * 3;
+
+    int xPos = (screenWidth - 80 - textWidth) / 2;
+    int yPos = (screenHeight - textHeight) / 2;
+
+    tft.setCursor(xPos, yPos);
+    tft.print(message);
+}
 
 void loop() {
     unsigned long currentMillis = millis();
-    
+
     if (currentMillis - previousMillis >= interval) {
         previousMillis = currentMillis;
 
-        movePaddle();   // Pohyb první pálky
-        movePaddle2();  // Pohyb druhé pálky (AI)
-        moveBall();     // Pohyb míčku
+        movePaddle();
+        movePaddle2();
+        moveBall();
+    }
+
+    if (scorePlayer1 == 3) {
+        tft.setRotation(0);
+        displayMessage("You win", ILI9341_GREEN);
+        while (true) {};
+    }
+    if (scorePlayer2 == 5) {
+        tft.setRotation(0);
+        displayMessage("You lose", ILI9341_RED);
+        while (true) {};
     }
 }
