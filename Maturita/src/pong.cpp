@@ -35,7 +35,6 @@ int paddleX = 10;
 int paddleY;
 int paddleSpeed = 5;
 
-// Druhá pálka (na pravé straně)
 int paddle2X;
 int paddle2Y;
 int paddle2Speed = 5;
@@ -47,16 +46,14 @@ float ballSpeedY = 2;
 int screenWidth = 320;
 int screenHeight = 240;
 
-// Výška zóny pro skóre
 int scoreZoneHeight = 30;
 
-// Parametry skóre
 int scorePlayer1 = 0;
 int scorePlayer2 = 0;
 
 // Parametry pro zrychlení míčku
-float ballSpeedMultiplier = 1.34; // Faktor pro zrychlení míčku
-float currentSpeedMultiplier = 1.0; // Aktuální rychlostní násobek
+float ballSpeedMultiplier = 1.34; 
+float currentSpeedMultiplier = 1.0; 
 
 // Funkce pro resetování míčku
 void resetBall(bool towardsPlayer1) {
@@ -65,9 +62,7 @@ void resetBall(bool towardsPlayer1) {
 
     // Resetujeme rychlost míčku na základní hodnoty
     ballSpeedX = random(2, 4) * (towardsPlayer1 ? -1 : 1); // Směr závisí na parametru
-    ballSpeedY = random(2, 4) * (random(0, 2) * 2 - 1);    // Náhodný směr nahoru/dolů
-
-    // Resetujeme aktuální rychlostní násobek
+    ballSpeedY = random(2, 4) * (random(0, 2) * 2 - 1);    // Náhodný směr nahoru/dol
     currentSpeedMultiplier = 1.0;
 }
 
